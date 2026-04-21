@@ -85,7 +85,6 @@ func (cfg *apiConfig) handlerReadChirp(w http.ResponseWriter, r *http.Request) {
 
 	chirp, err := cfg.db.SelectChirp(r.Context(), id)
 	if err != nil {
-		log.Printf("Error reading chirp: %s", err)
 		respondWithError(w, 404, "chirp not found")
 		return
 	}
