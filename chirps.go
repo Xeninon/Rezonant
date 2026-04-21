@@ -19,6 +19,17 @@ type Chirp struct {
 	UserID    uuid.UUID `json:"user_id"`
 }
 
+func profaneFilter(msg string) string {
+	words := strings.Split(msg, " ")
+	for i, word := range words {
+		word = strings.ToLower(word)
+		if word == "kerfuffle" || word == "sharbert" || word == "fornax" {
+			words[i] = "****"
+		}
+	}
+	return strings.Join(words, " ")
+}
+
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body   string    `json:"body"`
@@ -49,13 +60,18 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 	respondWithJSON(w, 201, Chirp{ID: chirp.ID, CreatedAt: chirp.CreatedAt, UpdatedAt: chirp.UpdatedAt, Body: chirp.Body, UserID: chirp.UserID})
 }
 
-func profaneFilter(msg string) string {
-	words := strings.Split(msg, " ")
-	for i, word := range words {
-		word = strings.ToLower(word)
-		if word == "kerfuffle" || word == "sharbert" || word == "fornax" {
-			words[i] = "****"
-		}
+func (cfg *apiConfig) handlerReadChirps(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.db.SelectChirps(r.Context())
+	if err != nil {
+		log.Printf("Error reading chirps: %s", err)
+		respondWithError(w, 500, "error creating chirp")
+		return
 	}
-	return strings.Join(words, " ")
+
+	returnVals := make([]Chirp, len(chirps))
+	for i, chirp := range chirps {
+		returnVals[i] = Chirp{ID: chirp.ID, CreatedAt: chirp.CreatedAt, UpdatedAt: chirp.UpdatedAt, Body: chirp.Body, UserID: chirp.UserID}
+	}
+
+	respondWithJSON(w, 200, returnVals)
 }
