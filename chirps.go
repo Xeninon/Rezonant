@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Xeninon/Rezonant/internal/auth"
 	"github.com/Xeninon/Rezonant/internal/database"
 	"github.com/google/uuid"
 )
@@ -32,8 +33,7 @@ func profaneFilter(msg string) string {
 
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Body   string    `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -44,12 +44,24 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, "Unauthorized")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.secret)
+	if err != nil {
+		respondWithError(w, 401, "expired JWT")
+		return
+	}
+
 	if len(params.Body) > 140 {
 		respondWithError(w, 400, "Chirp is too long")
 		return
 	}
 
-	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{Body: profaneFilter(params.Body), UserID: params.UserID})
+	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{Body: profaneFilter(params.Body), UserID: userID})
 	if err != nil {
 		log.Printf("Error creating chirp: %s", err)
 		respondWithError(w, 500, "error creating chirp")
