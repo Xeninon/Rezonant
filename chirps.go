@@ -103,3 +103,43 @@ func (cfg *apiConfig) handlerReadChirp(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, 200, Chirp{ID: chirp.ID, CreatedAt: chirp.CreatedAt, UpdatedAt: chirp.UpdatedAt, Body: chirp.Body, UserID: chirp.ID})
 }
+
+func (cfg *apiConfig) handlerDeleteChirp(w http.ResponseWriter, r *http.Request) {
+	headderToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, "Unauthorized")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(headderToken, cfg.secret)
+	if err != nil {
+		respondWithError(w, 401, "expired JWT")
+		return
+	}
+
+	chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, 404, "chirp not found")
+		return
+	}
+
+	chirp, err := cfg.db.SelectChirp(r.Context(), chirpID)
+	if err != nil {
+		log.Printf("Error getting chirp: %s", err)
+		respondWithError(w, 404, "chrip not found")
+		return
+	}
+
+	if userID != chirp.UserID {
+		respondWithError(w, 403, "Unauthorized")
+		return
+	}
+
+	if err := cfg.db.DeleteChirp(r.Context(), chirpID); err != nil {
+		log.Printf("Error deleting chirp: %s", err)
+		respondWithError(w, 500, "error deleting chirp")
+		return
+	}
+
+	w.WriteHeader(204)
+}
