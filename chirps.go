@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -73,6 +74,7 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 }
 
 func (cfg *apiConfig) handlerReadChirps(w http.ResponseWriter, r *http.Request) {
+	sortDesc := r.URL.Query().Get("sort") == "desc"
 	stringID := r.URL.Query().Get("author_id")
 	authorID, err := uuid.Parse(stringID)
 	if stringID == "" || err != nil {
@@ -88,7 +90,11 @@ func (cfg *apiConfig) handlerReadChirps(w http.ResponseWriter, r *http.Request) 
 			returnVals[i] = Chirp{ID: chirp.ID, CreatedAt: chirp.CreatedAt, UpdatedAt: chirp.UpdatedAt, Body: chirp.Body, UserID: chirp.UserID}
 		}
 
+		if sortDesc {
+			sort.Slice(returnVals, func(i, j int) bool { return returnVals[i].CreatedAt.After(returnVals[j].CreatedAt) })
+		}
 		respondWithJSON(w, 200, returnVals)
+		return
 	}
 
 	chirps, err := cfg.db.SelectChirpsByUser(r.Context(), authorID)
@@ -103,6 +109,9 @@ func (cfg *apiConfig) handlerReadChirps(w http.ResponseWriter, r *http.Request) 
 		returnVals[i] = Chirp{ID: chirp.ID, CreatedAt: chirp.CreatedAt, UpdatedAt: chirp.UpdatedAt, Body: chirp.Body, UserID: chirp.UserID}
 	}
 
+	if sortDesc {
+		sort.Slice(returnVals, func(i, j int) bool { return returnVals[i].CreatedAt.After(returnVals[j].CreatedAt) })
+	}
 	respondWithJSON(w, 200, returnVals)
 }
 
