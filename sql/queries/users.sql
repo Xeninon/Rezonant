@@ -21,5 +21,12 @@ set email = $2, hashed_password = $3
 WHERE id = $1;
 
 
+-- name: UpdateChirpyRed :exec
+UPDATE users
+SET is_chirpy_red = true
+WHERE id = $1;
+
+
+
 -- name: DeleteUsers :exec
 DELETE FROM users *;
