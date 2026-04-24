@@ -73,7 +73,25 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 }
 
 func (cfg *apiConfig) handlerReadChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.db.SelectChirps(r.Context())
+	stringID := r.URL.Query().Get("author_id")
+	authorID, err := uuid.Parse(stringID)
+	if stringID == "" || err != nil {
+		chirps, err := cfg.db.SelectChirps(r.Context())
+		if err != nil {
+			log.Printf("Error reading chirps: %s", err)
+			respondWithError(w, 500, "error reading chirp")
+			return
+		}
+
+		returnVals := make([]Chirp, len(chirps))
+		for i, chirp := range chirps {
+			returnVals[i] = Chirp{ID: chirp.ID, CreatedAt: chirp.CreatedAt, UpdatedAt: chirp.UpdatedAt, Body: chirp.Body, UserID: chirp.UserID}
+		}
+
+		respondWithJSON(w, 200, returnVals)
+	}
+
+	chirps, err := cfg.db.SelectChirpsByUser(r.Context(), authorID)
 	if err != nil {
 		log.Printf("Error reading chirps: %s", err)
 		respondWithError(w, 500, "error reading chirp")
