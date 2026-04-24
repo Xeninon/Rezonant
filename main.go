@@ -17,12 +17,13 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
 	secret := os.Getenv("SECRET")
+	polkaKey := os.Getenv("POLKA_KEY")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		return
 	}
 	dbQueries := database.New(db)
-	cfg := apiConfig{db: dbQueries, platform: platform, secret: secret}
+	cfg := apiConfig{db: dbQueries, platform: platform, secret: secret, polkaKey: polkaKey}
 	mux := http.NewServeMux()
 	mux.Handle("/app/", http.StripPrefix("/app", cfg.middlewareMetricsInc(http.FileServer(http.Dir(".")))))
 	mux.HandleFunc("GET /api/healthz", handlerHealthz)
@@ -50,4 +51,5 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	secret         string
+	polkaKey       string
 }

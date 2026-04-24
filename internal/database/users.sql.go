@@ -72,7 +72,7 @@ func (q *Queries) SelectUser(ctx context.Context, email string) (User, error) {
 
 const updateChirpyRed = `-- name: UpdateChirpyRed :exec
 UPDATE users
-SET is_chirpy_red = true
+SET updated_at = NOW(), is_chirpy_red = true
 WHERE id = $1
 `
 
@@ -83,7 +83,7 @@ func (q *Queries) UpdateChirpyRed(ctx context.Context, id uuid.UUID) error {
 
 const updateUser = `-- name: UpdateUser :exec
 UPDATE users
-set email = $2, hashed_password = $3
+set updated_at = NOW(), email = $2, hashed_password = $3
 WHERE id = $1
 `
 
